@@ -18,33 +18,32 @@ class RW_UM_Account_Tabs
 
         // 4. 渲染自定义 Tab 的内容（加载你的 PHP 模板）
         // UM 核心是不允许直接通过 filter 引入 PHP 文件的，需要接管它的内容输出
-        add_action('um_account_content_hook_my_licenses', [$this, 'render_my_licenses']);
-        add_action('um_account_content_hook_my_orders', [$this, 'render_my_orders']);
-        add_action('um_account_content_hook_order_detail', [$this, 'render_order_detail']);
+        // 渲染自定义 Tab 内容
+        add_filter('um_account_content_hook_my_licenses', [$this, 'render_my_licenses']);
+        add_filter('um_account_content_hook_my_orders', [$this, 'render_my_orders']);
+        add_filter('um_account_content_hook_order_detail', [$this, 'render_order_detail']);
     }
 
     /**
      * 注册新 Tab
      */
-    public function add_custom_tabs($tabs)
+    public function add_custom_tabs($tabs): array
     {
-        // UM 的 Tab 数组结构：[优先级] => [属性数组]
-        $tabs[30] = [
-            'name' => 'My Licenses',
-            'icon' => 'um-faicon-key', // UM 使用自带的图标类名
-            'custom' => true, // 告诉 UM 这是自定义 Tab
-        ];
-
-        $tabs[31] = [
-            'name' => 'My Orders',
-            'icon' => 'um-faicon-shopping-cart',
+        $tabs[30]['my_licenses'] = [
+            'title'  => 'My Licenses',   // 注意：UM 用的是 'title' 而不是 'name'
+            'icon'   => 'um-faicon-key',
             'custom' => true,
         ];
 
-        // 订单详情（隐藏的子页面）
-        $tabs[32] = [
-            'name' => 'Order Detail',
-            'icon' => 'um-faicon-file-text-o',
+        $tabs[31]['my_orders'] = [
+            'title'  => 'My Orders',
+            'icon'   => 'um-faicon-shopping-cart',
+            'custom' => true,
+        ];
+
+        $tabs[32]['order_detail'] = [
+            'title'  => 'Order Detail',
+            'icon'   => 'um-faicon-file-text-o',
             'custom' => true,
         ];
 
@@ -69,31 +68,33 @@ class RW_UM_Account_Tabs
      */
     public function hide_navigation_tabs($tabs)
     {
-        // 隐藏 order_detail
-        foreach ($tabs as $key => $tab) {
-            if ($tab['name'] === 'Order Detail') {
-                unset($tabs[$key]);
-            }
-        }
+        // 隐藏 Order Detail 导航菜单
+        unset($tabs[32]['order_detail']);
+
         return $tabs;
     }
-
     /**
      * 渲染各个 Tab 的模板
      */
-    public function render_my_licenses()
+    public function render_my_licenses($output = ''): string
     {
+        ob_start();
         // 注意：原有的变量如果需要在模板中使用，需要在这里提前获取
         include ASTRA_CHILD_PATH . '/inc/ultimatemember/templates/licenses.php';
+        return $output . ob_get_clean();
     }
 
-    public function render_my_orders()
+    public function render_my_orders($output = ''): string
     {
+        ob_start();
         include ASTRA_CHILD_PATH . '/inc/ultimatemember/templates/orders.php';
+        return $output . ob_get_clean();
     }
 
-    public function render_order_detail()
+    public function render_order_detail($output = ''): string
     {
+        ob_start();
         include ASTRA_CHILD_PATH . '/inc/ultimatemember/templates/order-detail.php';
+        return $output . ob_get_clean();
     }
 }
