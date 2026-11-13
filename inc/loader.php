@@ -13,15 +13,12 @@ require_once ASTRA_CHILD_PATH . '/inc/assets/class-assets-manager.php';
 new RW_Template_Manager();
 new RW_Assets_Manager();
 
-// 只在需要时加载 UsersWP 相关功能
-if (defined('USERSWP_VERSION') || class_exists('UsersWP')) {
-    require_once ASTRA_CHILD_PATH . '/inc/userswp/class-account-tabs.php';
-    // 初始化
-    new RW_Account_Tabs();
-}
-
 // 只在需要时加载 Ultimate Member 相关功能
 if (defined('UM_VERSION') || class_exists('UM')) {
     require_once ASTRA_CHILD_PATH . '/inc/ultimatemember/class-um-account-tabs.php';
     new RW_UM_Account_Tabs();
 }
+
+// 加载 Paddle 支付相关功能
+require_once ASTRA_CHILD_PATH . '/inc/paddle/class-paddle-manager.php';
+new RW_Paddle_Manager();

@@ -20,6 +20,9 @@ class RW_Assets_Manager {
 
         // 订单完成页面资源（从 functions.php 迁移）
         add_action('wp_enqueue_scripts', [$this, 'enqueue_order_complete_assets']);
+
+        //
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_paddle_scripts']);
     }
 
     /**
@@ -37,6 +40,39 @@ class RW_Assets_Manager {
             get_stylesheet_uri(),
             ['astra-parent-style']
         );
+    }
+
+    /**
+     *
+     * */
+    public function enqueue_paddle_scripts(): void
+    {
+        if (!class_exists('RW_Paddle_Manager') || !RW_Paddle_Manager::is_paddle_page()) {
+            return;
+        }
+
+        if (!RW_Paddle_Manager::is_paddle_page()) {
+            return;
+        }
+
+        // 1. 加载 Paddle 官方 CDN 脚本（v2）
+        wp_enqueue_script(
+            'paddle-js',
+            'https://cdn.paddle.com/paddle/v2/paddle.js',
+            array(),
+            null,
+            true
+        );
+
+        // 2. 加载自定义初始化脚本
+        wp_enqueue_script(
+            'rw-paddle-init',
+            ASTRA_CHILD_URL . '/inc/assets/js/paddle/paddle-init.js',
+            array('paddle-js'),
+            '1.0.6',//ASTRA_CHILD_VERSION,
+            true
+        );
+
     }
 
     /**
