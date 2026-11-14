@@ -2,17 +2,29 @@ jQuery(document).ready(function($) {
     'use strict';
 
     const RW_Licenses = {
-        init: function () {
+        init: async function () {
 
-            $(document).on('rw_account:load_licenses', () => {
-                this.loadLicenses();
-            });
+            // 绑定复制按钮事件
             this.bindCopyBtnClickEvents();
 
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('type') === 'my_licenses' && window.RW_Account && window.RW_Account.getJwtToken()) {
-                this.loadLicenses();
+            // 判断当前是否为 My Licenses 页面
+            const path = window.location.pathname;
+            const isMyLicenses = /\/account\/my_licenses\/?$/.test(path);
+
+            if (!isMyLicenses || !window.RW_Account) {
+                return;
             }
+
+            // 等待 JWT Token 准备完成
+            const jwtToken = await window.RW_Account.getJwtTokenAsync();
+
+            if (!jwtToken) {
+                console.error('[RW Licenses] Unable to obtain JWT token.');
+                return;
+            }
+
+            // 加载许可证数据
+            this.loadLicenses();
         },
 
         // 🔹
@@ -139,12 +151,17 @@ jQuery(document).ready(function($) {
         //
         bindCopyBtnClickEvents: function () {
             const $licensesTab = $('.rw-licenses-tab');
+            const self = this;
+
             $licensesTab.on('click', '.rw-copy-btn', function (e) {
                 e.preventDefault();
+
                 const $btn = $(this);
                 const licenseKey = $btn.data('key');
+
                 if (!licenseKey) return;
-                this.copyToClipboard(licenseKey, $btn);
+
+                self.copyToClipboard(licenseKey, $btn);
             });
         },
 

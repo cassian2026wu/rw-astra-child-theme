@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 
 class RW_Assets_Manager {
 
+    const STATIC_VERSION = '1.2.14';
+
     public function __construct() {
         // 基础样式加载
         add_action('wp_enqueue_scripts', [$this, 'enqueue_parent_styles']);
@@ -69,7 +71,7 @@ class RW_Assets_Manager {
             'rw-paddle-init',
             ASTRA_CHILD_URL . '/inc/assets/js/paddle/paddle-init.js',
             array('paddle-js'),
-            '1.0.6',//ASTRA_CHILD_VERSION,
+            self::STATIC_VERSION,//ASTRA_CHILD_VERSION,
             true
         );
 
@@ -80,103 +82,59 @@ class RW_Assets_Manager {
      */
     public function rw_enqueue_account_tabs_assets(): void
     {
-        // 只在账户页面加载
-        if (!str_contains($_SERVER['REQUEST_URI'], '/account/')) {
+        // 1. 获取当前请求路径
+        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $path = parse_url($request_uri, PHP_URL_PATH);
+
+        // 2. 检查是否在 /account/ 路径下
+        if (!preg_match('#/account(?:/|$)#', $path)) {
             return;
         }
 
-        // 获取并过滤 type 参数
-        $type = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
-
-        // 只有 my_licenses 或 my_orders 页面才加载资源
-        if (!in_array($type, ['my_licenses', 'my_orders', 'order_detail'], true)) {
-            return;
-        }
-
-        // 准备本地化数据
+        // 3. 准备本地化数据
         $localize_data = array(
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'rest_url' => rest_url(),
-            'rest_nonce' => wp_create_nonce('wp_rest'),
-            'user_id' => get_current_user_id(),
-            'nonce' => wp_create_nonce('rw_account_nonce'),
+            'ajax_url'     => admin_url('admin-ajax.php'),
+            'rest_url'     => rest_url(),
+            'rest_nonce'   => wp_create_nonce('wp_rest'),
+            'user_id'      => get_current_user_id(),
+            'nonce'        => wp_create_nonce('rw_account_nonce'),
             'is_logged_in' => is_user_logged_in(),
-            'current_type' => $type
         );
 
-        // 基础 CSS（共用样式）
+        // 4. 加载基础 CSS
         wp_enqueue_style(
             'rw-account-base-css',
             ASTRA_CHILD_URL . '/inc/assets/css/rw-account-base.css',
             array(),
-            ASTRA_CHILD_VERSION
+            self::STATIC_VERSION
         );
 
-        // 基础 JS（核心功能）
+        // 5. 加载 Loader
         wp_enqueue_script(
-            'rw-account-base-js',
-            ASTRA_CHILD_URL . '/inc/assets/js/rw-account-base.js',
-            array('jquery'),
-            ASTRA_CHILD_VERSION,
+            'rw-account-loader-js',
+            ASTRA_CHILD_URL . '/inc/assets/js/rw-account-loader.js',
+            array('jquery', 'wp-hooks'),
+            self::STATIC_VERSION,
             true
         );
 
-        // 为基础脚本添加本地化数据
-        wp_localize_script('rw-account-base-js', 'rw_ajax', $localize_data);
+        // 6. 为 Loader 提供资源路径和版本
+        wp_localize_script(
+            'rw-account-loader-js',
+            'rw_account_loader',
+            array(
+                'js_url'  => ASTRA_CHILD_URL . '/inc/assets/js/',
+                'css_url' => ASTRA_CHILD_URL . '/inc/assets/css/',
+                'version' => self::STATIC_VERSION,
+            )
+        );
 
-        // 根据 type 参数加载特定的 CSS 和 JS
-        if ($type === 'my_licenses') {
-            // 加载 Licenses 页面特定 CSS
-            wp_enqueue_style(
-                'rw-account-licenses-css',
-                ASTRA_CHILD_URL . '/inc/assets/css/rw-account-licenses.css',
-                array('rw-account-base-css'),
-                ASTRA_CHILD_VERSION
-            );
-
-            // 加载 Licenses 页面特定 JS
-            wp_enqueue_script(
-                'rw-account-licenses-js',
-                ASTRA_CHILD_URL . '/inc/assets/js/rw-account-licenses.js',
-                array('jquery', 'rw-account-base-js'),
-                ASTRA_CHILD_VERSION,
-                true
-            );
-
-        } elseif ($type === 'my_orders') {
-            // 加载 Orders 页面特定 CSS
-            wp_enqueue_style(
-                'rw-account-orders-css',
-                ASTRA_CHILD_URL . '/inc/assets/css/rw-account-orders.css',
-                array('rw-account-base-css'),
-                ASTRA_CHILD_VERSION
-            );
-
-            // 加载 Orders 页面特定 JS
-            wp_enqueue_script(
-                'rw-account-orders-js',
-                ASTRA_CHILD_URL . '/inc/assets/js/rw-account-orders.js',
-                array('jquery', 'rw-account-base-js'),
-                ASTRA_CHILD_VERSION,
-                true
-            );
-        }elseif ($type === 'order_detail') {
-            wp_enqueue_style(
-                'rw-order-detail-css',
-                ASTRA_CHILD_URL . '/inc/assets/css/rw-account-order-detail.css',
-                array('rw-account-base-css'),
-                ASTRA_CHILD_VERSION
-            );
-
-            wp_enqueue_script(
-                'rw-order-detail-js',
-                ASTRA_CHILD_URL . '/inc/assets/js/rw-account-order-detail.js',
-                array('jquery', 'rw-account-base-js'),
-                ASTRA_CHILD_VERSION,
-                true
-            );
-
-        }
+        // 7. 将原有的账号数据本地化到 Loader
+        wp_localize_script(
+            'rw-account-loader-js',
+            'rw_ajax',
+            $localize_data
+        );
     }
 
 

@@ -22,6 +22,11 @@ class RW_UM_Account_Tabs
         add_filter('um_account_content_hook_my_licenses', [$this, 'render_my_licenses']);
         add_filter('um_account_content_hook_my_orders', [$this, 'render_my_orders']);
         add_filter('um_account_content_hook_order_detail', [$this, 'render_order_detail']);
+
+        //
+        add_action('um_account_tab__my_licenses', [$this, 'tab_hook_my_licenses']);
+        add_action('um_account_tab__my_orders', [$this, 'tab_hook_my_orders']);
+        add_action('um_account_tab__order_detail', [$this, 'tab_hook_order_detail']);
     }
 
     /**
@@ -33,18 +38,21 @@ class RW_UM_Account_Tabs
             'title'  => 'My Licenses',   // 注意：UM 用的是 'title' 而不是 'name'
             'icon'   => 'um-faicon-key',
             'custom' => true,
+            'show_button' => false,
         ];
 
         $tabs[31]['my_orders'] = [
             'title'  => 'My Orders',
             'icon'   => 'um-faicon-shopping-cart',
             'custom' => true,
+            'show_button' => false,
         ];
 
         $tabs[32]['order_detail'] = [
             'title'  => 'Order Detail',
             'icon'   => 'um-faicon-file-text-o',
             'custom' => true,
+            'show_button' => false,
         ];
 
         return $tabs;
@@ -68,11 +76,14 @@ class RW_UM_Account_Tabs
      */
     public function hide_navigation_tabs($tabs)
     {
-        // 隐藏 Order Detail 导航菜单
-        unset($tabs[32]['order_detail']);
+        // 保留 Order Detail Tab，只隐藏导航按钮
+        if (isset($tabs[32]['order_detail'])) {
+            $tabs[32]['order_detail']['show_button'] = false;
+        }
 
         return $tabs;
     }
+
     /**
      * 渲染各个 Tab 的模板
      */
@@ -94,7 +105,41 @@ class RW_UM_Account_Tabs
     public function render_order_detail($output = ''): string
     {
         ob_start();
+
         include ASTRA_CHILD_PATH . '/inc/ultimatemember/templates/order-detail.php';
-        return $output . ob_get_clean();
+
+        $html = ob_get_clean();
+
+        return $output . $html;
+    }
+
+    public function tab_hook_my_licenses( $info ) {
+        global $ultimatemember;
+        extract( $info );
+        $output = $ultimatemember->account->get_tab_output('my_licenses');
+        if ( $output ) { echo $output; }
+    }
+
+    public function tab_hook_my_orders( $info ) {
+        global $ultimatemember;
+        extract( $info );
+        $output = $ultimatemember->account->get_tab_output('my_orders');
+        if ( $output ) { echo $output; }
+    }
+
+    public function tab_hook_order_detail( $info ) {
+
+        error_log('[RW Order Detail] tab_hook_order_detail() called');
+
+        global $ultimatemember;
+        extract( $info );
+
+        $output = $ultimatemember->account->get_tab_output('order_detail');
+
+        error_log('[RW Order Detail] get_tab_output() result length: ' . strlen((string) $output));
+
+        if ( $output ) {
+            echo $output;
+        }
     }
 }

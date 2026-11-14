@@ -8,8 +8,10 @@ jQuery(document).ready(function($) {
                 this.loadOrders();
             });
 
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('type') === 'my_orders' && window.RW_Account && window.RW_Account.getJwtToken()) {
+            const path = window.location.pathname;
+            const isMyOrders = /\/account\/my_orders\/?$/.test(path);
+
+            if (isMyOrders && window.RW_Account && window.RW_Account.getJwtToken()) {
                 this.loadOrders();
             }
 
@@ -149,15 +151,35 @@ jQuery(document).ready(function($) {
         // 🔹
         bindCardEvents: function () {
 
-            // 查看详情按钮 - 跳转到订单详情页
+            // View order details using Ultimate Member's native tab switching.
             $('.rw-btn-view').off('click').on('click', function (e) {
                 e.preventDefault();
 
                 const orderId = $(this).data('order-id');
 
+                if (!orderId) {
+                    return;
+                }
+
                 const accountUrl = window.RW_Account.getAccountUrl();
 
-                window.location.href = `${accountUrl}?type=order_detail&order_id=${orderId}`;
+                const detailUrl = `${accountUrl}/order_detail/?order_id=${encodeURIComponent(orderId)}`;
+
+                // Create a temporary UM navigation link.
+                const $tempLink = $('<a>', {
+                    href: detailUrl,
+                    'data-tab': 'order_detail'
+                });
+
+                const $tempItem = $('<li>').append($tempLink);
+
+                // Trigger UM's native account tab switching handler.
+                $('.um-account-side ul').append($tempItem);
+
+                $tempLink.trigger('click');
+
+                // Remove the temporary navigation item.
+                $tempItem.remove();
             });
 
         },

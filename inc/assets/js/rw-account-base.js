@@ -1,4 +1,4 @@
-jQuery(document).ready(function($) {
+(function($, window, document) {
     'use strict';
 
     const RW_Account_Core = {
@@ -10,13 +10,9 @@ jQuery(document).ready(function($) {
 
         init: function () {
             this.getRestNonce();
-            //
-            if (this.requiresToken()) {
-                this.ensureToken();
-            }
 
             //
-            this.initUserCenter();
+            return this.initUserCenter();
         },
 
         getRestNonce: function () {
@@ -47,37 +43,15 @@ jQuery(document).ready(function($) {
          * 判断当前页面是否需要 token
          */
         requiresToken: function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const pageType = urlParams.get('type');
-
-            //
-            if (pageType === 'my_licenses' || pageType === 'my_orders' || pageType === 'order_detail') {
-                return true;
-            }
-
-            //
-            //if (window.location.pathname.includes('/order-detail')) {
-            //    return true;
-            //}
-
-            //
-
-            return false;
+            const path = window.location.pathname;
+            return /\/account\/(my_licenses|my_orders|order_detail)(\/[^\/]+)?\/?$/.test(path);
         },
+
 
         // 🔹
         initUserCenter: async function () {
             // 确保 token 已获取
             await this.ensureToken();
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const pageType = urlParams.get('type');
-
-            if (pageType === 'my_licenses') {
-                $(document).trigger('rw_account:load_licenses');
-            } else if (pageType === 'my_orders') {
-                $(document).trigger('rw_account:load_orders');
-            }
             // ✅ 其他页面（如订单详情）不需要触发事件，但 token 已经可用
         },
 
@@ -214,8 +188,6 @@ jQuery(document).ready(function($) {
     };
 
     //
-    RW_Account_Core.init();
-
-    //
     window.RW_Account = RW_Account_Core;
-});
+    window.RW_Account.ready = RW_Account_Core.init();
+})(jQuery, window, document);
